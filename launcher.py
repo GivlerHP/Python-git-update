@@ -84,6 +84,22 @@ def update_available():
     return bool(remote) and local != remote
 
 
+def restore_missing_files():
+    """Восстанавливает удалённые отслеживаемые файлы текущего коммита."""
+    result = git("diff", "--name-only", "--diff-filter=D", check=False)
+    missing = [name for name in result.stdout.splitlines() if name]
+    if not missing:
+        return False
+
+    restored = git("restore", "--source=HEAD", "--worktree", "--", *missing, check=False)
+    if restored.returncode != 0:
+        print("Не удалось восстановить удалённые файлы:", restored.stderr.strip())
+        return False
+
+    print(f"Восстановлено файлов: {len(missing)}")
+    return "launcher.py" in {Path(name).as_posix() for name in missing}
+
+
 def update_repository():
     result = git("pull", "--ff-only", "origin", BRANCH, check=False)
     if result.returncode != 0:
@@ -125,10 +141,15 @@ def main():
     if launcher_replaced:
         restart_launcher()
 
+    launcher_restored = restore_missing_files()
+
     if update_available():
         print("Найдено обновление. Устанавливаю его перед запуском...")
         if update_repository():
             restart_launcher()
+
+    if launcher_restored:
+        restart_launcher()
 
     # Основная программа работает самостоятельно, а обновлятор завершается.
     start_program()
