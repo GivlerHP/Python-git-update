@@ -1,6 +1,6 @@
 import subprocess
 import sys
-import time
+import os
 from pathlib import Path
 
 
@@ -8,7 +8,24 @@ PROJECT_DIR = Path(__file__).resolve().parent
 REPO_URL = "https://github.com/GivlerHP/Python-git-update.git"
 BRANCH = "master"
 PROGRAM = PROJECT_DIR / "screen.pyw"
-CHECK_INTERVAL = 60  # проверять обновления раз в 60 секунд
+def hide_console():
+    """Перезапускает обновлятор без консольного окна Windows."""
+    if os.name != "nt" or os.environ.get("UPDATER_BACKGROUND") == "1":
+        return
+
+    pythonw = Path(sys.executable).with_name("pythonw.exe")
+    if not pythonw.exists():
+        return
+
+    environment = os.environ.copy()
+    environment["UPDATER_BACKGROUND"] = "1"
+    subprocess.Popen(
+        [str(pythonw), str(Path(__file__).resolve())],
+        cwd=PROJECT_DIR,
+        env=environment,
+        creationflags=subprocess.CREATE_NO_WINDOW,
+    )
+    sys.exit(0)
 
 
 def git(*args, check=True):
@@ -83,6 +100,8 @@ def start_program():
 
 
 def main():
+    hide_console()
+
     try:
         prepare_repository()
     except (OSError, RuntimeError) as error:
@@ -90,27 +109,12 @@ def main():
         input("Нажмите Enter для выхода...")
         return
 
-    process = start_program()
+    if update_available():
+        print("Найдено обновление. Устанавливаю его перед запуском...")
+        update_repository()
 
-    try:
-        while True:
-            time.sleep(CHECK_INTERVAL)
-
-            if not update_available():
-                continue
-
-            print("Найдено обновление. Перезапускаю программу...")
-            process.terminate()
-            process.wait()
-
-            if update_repository():
-                process = start_program()
-            else:
-                process = start_program()
-
-    except KeyboardInterrupt:
-        process.terminate()
-        process.wait()
+    # Основная программа работает самостоятельно, а обновлятор завершается.
+    start_program()
 
 
 if __name__ == "__main__":
