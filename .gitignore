@@ -1,0 +1,17 @@
+# Полученные программой файлы
+files/
+
+# Кэш Python
+__pycache__/
+*.py[cod]
+
+# Локальные настройки и логи
+*.log
+*.local
+
+# Файлы IDE и временные файлы Windows
+.idea/
+.vscode/
+*.tmp
+Thumbs.db
+Desktop.ini
