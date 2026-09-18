@@ -6,7 +6,7 @@ from pathlib import Path
 
 PROJECT_DIR = Path(__file__).resolve().parent
 REPO_URL = "https://github.com/GivlerHP/Python-git-update.git"
-BRANCH = "main"
+BRANCH = "master"
 PROGRAM = PROJECT_DIR / "screen.pyw"
 CHECK_INTERVAL = 60  # проверять обновления раз в 60 секунд
 
