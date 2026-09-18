@@ -64,11 +64,13 @@ def prepare_repository():
         # Папка files не затрагивается, потому что она добавлена в .gitignore.
         git("checkout", "-B", BRANCH, f"origin/{BRANCH}")
         print("Репозиторий подключён.")
-        return
+        return True
 
     remotes = git("remote", check=False).stdout.split()
     if "origin" not in remotes:
         git("remote", "add", "origin", REPO_URL)
+
+    return False
 
 
 def update_available():
@@ -99,19 +101,34 @@ def start_program():
     )
 
 
+def restart_launcher():
+    """Запускает уже обновлённую копию launcher.py и завершает старую."""
+    subprocess.Popen(
+        [sys.executable, str(Path(__file__).resolve())],
+        cwd=PROJECT_DIR,
+        env=os.environ.copy(),
+        creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
+    )
+    sys.exit(0)
+
+
 def main():
     hide_console()
 
     try:
-        prepare_repository()
+        launcher_replaced = prepare_repository()
     except (OSError, RuntimeError) as error:
         print(f"Ошибка подготовки Git: {error}")
         input("Нажмите Enter для выхода...")
         return
 
+    if launcher_replaced:
+        restart_launcher()
+
     if update_available():
         print("Найдено обновление. Устанавливаю его перед запуском...")
-        update_repository()
+        if update_repository():
+            restart_launcher()
 
     # Основная программа работает самостоятельно, а обновлятор завершается.
     start_program()
